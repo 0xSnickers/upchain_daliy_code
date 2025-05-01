@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-// 编写一个 Bank 合约，实现功能：
-// 1. 可以通过 Metamask 等钱包直接给 Bank 合约地址存款
-// 2. 在 Bank 合约记录每个地址的存款金额
-// 3. 编写 withdraw() 方法，仅管理员可以通过该方法提取资金。
-// 4. 用数组记录存款金额的前 3 名用户
+interface IBank {
+    function withdraw(address payable _addr) external;
+    function getBalance() external view returns (uint);
 
-contract Bank {
+}
+
+contract Bank is IBank{
     uint constant CONSTANT_NUM = 3; // Top 3
-    address owner;
+    address public owner;
     mapping(address=>uint) balances;
     mapping(address=>bool) deposite_user_exist;
     address[] deposite_user; 
@@ -25,13 +25,8 @@ contract Bank {
         _;
     }
 
-    // 声明当前合约可接收ETH
-    receive() external payable {
-        
-    }
-
-    function deposit() external payable  {
-        require(msg.value > 0, "Invalid deposite.");
+    receive() external payable virtual{
+        require(msg.value > 0, "Invalid deposite."); // 放到函数修改器判断
          // 把钱存到合约
         payable(address(this)).transfer(msg.value);
 
@@ -45,6 +40,7 @@ contract Bank {
         insert();
     }
 
+   
     function insert() internal {
         // 是否已经在 top3 中
         int existingIndex = -1;
@@ -110,5 +106,7 @@ contract Bank {
     function get_top_three_addr() external view returns(address[CONSTANT_NUM] memory){
         return top_three_addr;
     }
-   
+    function getBalance() external view returns(uint){
+        return address(this).balance;
+    }
 }
