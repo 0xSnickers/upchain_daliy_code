@@ -1,0 +1,15 @@
+{
+    "name": "Snikers NFT #3",
+    "description": "My Snikers NFT.",
+    "image": "ipfs://bafkreif6pju2d7i6hfetnt2ku32373q3kmizi47szdktnuyq6mg2lyyuvu", 
+    "attributes": [
+      {
+        "trait_type": "Type",
+        "value": "White Cat"
+      },
+      {
+        "trait_type": "Color",
+        "value": "White"
+      }
+    ]
+  }
