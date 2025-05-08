@@ -66,14 +66,11 @@ contract NFTMarket is ReentrancyGuard, ITokenReceiver {
         require(listing.isActive, "NFTMarket: NFT not for sale");
         require(listing.seller != msg.sender, "NFTMarket: cannot buy your own NFT");
 
-        // 计算手续费
-        uint256 fee = (listing.price * feePercentage) / 10000;
-        uint256 sellerAmount = listing.price - fee;
 
         // 转移 NFT
         IERC721(nftContract).transferFrom(listing.seller, msg.sender, tokenId);
 
-        // 更新上架状态
+        
         listing.isActive = false;
 
         emit NFTSold(nftContract, tokenId, msg.sender, listing.price);

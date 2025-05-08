@@ -1,0 +1,9 @@
+[submodule "5-07/foundry_test_token/lib/openzeppelin-contracts"]
+	path = 5-07/foundry_test_token/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "5-08/foundry_test_token_and_nft/lib/forge-std"]
+	path = 5-08/foundry_test_token_and_nft/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "5-08/foundry_test_token_and_nft/lib/openzeppelin-contracts"]
+	path = 5-08/foundry_test_token_and_nft/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

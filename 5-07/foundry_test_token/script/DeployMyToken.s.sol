@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.20;
 
-import {Script, console} from "forge-std/Script.sol";
+import { Script } from "forge-std/Script.sol";
 import { MyToken } from "../src/MyToken.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract DeployMyTokenrScript is Script {
-    MyToken public token;
+    MyToken public token_addr;
 
     function setUp() public {}
 
@@ -15,9 +16,8 @@ contract DeployMyTokenrScript is Script {
 
         // 开始广播交易
         vm.startBroadcast(deployerPrivateKey);
-        MyToken token = new MyToken("Snikers2", "SNK2");
+        token_addr = new MyToken("Sniker", "SNK");
         vm.stopBroadcast();
 
-        console.log("MyToken deployed at:", address(token));
     }
 }
