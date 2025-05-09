@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.29;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./ITokenReceiver.sol";
+import "forge-std/console.sol";
 
 contract NFTMarket is ReentrancyGuard, ITokenReceiver {
     // NFT 上架信息结构
@@ -60,17 +61,32 @@ contract NFTMarket is ReentrancyGuard, ITokenReceiver {
      * @dev 购买 NFT
      * @param nftContract NFT合约地址
      * @param tokenId NFT的ID
+     * @param token ERC20代币地址
      */
-    function buyNFT(address nftContract, uint256 tokenId) external nonReentrant {
+    function buyNFT(address nftContract, uint256 tokenId, address token) external nonReentrant {
         Listing storage listing = _listings[nftContract][tokenId];
         require(listing.isActive, "NFTMarket: NFT not for sale");
         require(listing.seller != msg.sender, "NFTMarket: cannot buy your own NFT");
 
+        // 计算手续费
+        uint256 fee = (listing.price * feePercentage) / 10000;
+        uint256 sellerAmount = listing.price - fee;
+
+        // 转移代币
+        require(IERC20(token).transferFrom(msg.sender, address(this), listing.price), "NFTMarket: token transfer failed");
+        
+        // 转移代币给卖家
+        require(IERC20(token).transfer(listing.seller, sellerAmount), "NFTMarket: seller transfer failed");
+        
+        // 转移手续费给平台
+        if (fee > 0) {
+            require(IERC20(token).transfer(feeCollector, fee), "NFTMarket: fee transfer failed");
+        }
 
         // 转移 NFT
         IERC721(nftContract).transferFrom(listing.seller, msg.sender, tokenId);
-
         
+        // 更新上架状态
         listing.isActive = false;
 
         emit NFTSold(nftContract, tokenId, msg.sender, listing.price);
@@ -86,15 +102,22 @@ contract NFTMarket is ReentrancyGuard, ITokenReceiver {
         bytes calldata data
     ) external override returns (bool) {
         // 确保只能由代币合约调用
+        // console.log("NFTMarket Contract by:", address(this)); 
+        // console.log("sender by:", sender); 
+
         require(msg.sender == token, "NFTMarket: only token contract can call");
-        
+      
         // 解码数据
         (address nftContract, uint256 tokenId) = abi.decode(data, (address, uint256));
         
         Listing storage listing = _listings[nftContract][tokenId];
-        require(listing.isActive, "NFTMarket: NFT not for sale");
-        require(amount >= listing.price, "NFTMarket: insufficient payment");
+        // console.log("listing.seller: ", listing.seller); 
+
         require(listing.seller != sender, "NFTMarket: cannot buy your own NFT");
+
+        require(listing.isActive, "NFTMarket: NFT not for sale");
+       
+        require(amount >= listing.price, "NFTMarket: insufficient payment");
 
         // 计算手续费
         uint256 fee = (listing.price * feePercentage) / 10000;
