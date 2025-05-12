@@ -214,7 +214,7 @@ const TokenBank = () => {
     }
     return result
   }
-  const handleTokenApprove = async () => {
+  const handleTokenApprove = async (amount: bigint): Promise<boolean> => {
     try {
       // 验证代币合约地址
       if (!currentAddresses.MYTOKEN) {
@@ -229,13 +229,16 @@ const TokenBank = () => {
         args: [address, currentAddresses.TOKEN_BANK]
       }) as bigint | undefined;
 
-      const amount = parseEther(inputAmount);
-
       console.log('Current allowance check:', {
         allowance: allowance?.toString(),
         required: amount.toString(),
         hasEnoughAllowance: allowance && allowance >= amount
       });
+
+      // 如果授权额度足够，直接返回
+      if (allowance && allowance >= amount) {
+        return true;
+      }
 
       // 检查代币余额
       const balance = await publicClient?.readContract({
@@ -255,123 +258,68 @@ const TokenBank = () => {
         throw new Error(`Insufficient token balance. Required: ${formatEther(amount)}, Available: ${balance ? formatEther(balance) : '0'}`);
       }
 
-      // 如果授权额度不足，需要重新授权
-      if (!allowance || allowance < amount) {
-        message.info('Approving token transfer...');
-        console.log('Initiating token approval...');
+      // 需要重新授权
+      message.info('Approving token transfer...');
+      console.log('Initiating token approval...');
 
-        try {
-          // 授权金额设置为最大，避免频繁授权
-          const approveHash = await approveAsync({
-            address: currentAddresses.MYTOKEN as `0x${string}`,
-            abi: MY_TOKEN_ABI,
-            functionName: 'approve',
-            args: [currentAddresses.TOKEN_BANK, 2n ** 256n - 1n],
-          });
+      // 授权金额设置为最大，避免频繁授权
+      const approveHash = await approveAsync({
+        address: currentAddresses.MYTOKEN as `0x${string}`,
+        abi: MY_TOKEN_ABI,
+        functionName: 'approve',
+        args: [currentAddresses.TOKEN_BANK, 2n ** 256n - 1n],
+      });
 
-          console.log('Approval transaction submitted:', {
-            hash: approveHash,
-            tokenAddress: currentAddresses.MYTOKEN,
-            spender: currentAddresses.TOKEN_BANK
-          });
+      console.log('Approval transaction submitted:', {
+        hash: approveHash,
+        tokenAddress: currentAddresses.MYTOKEN,
+        spender: currentAddresses.TOKEN_BANK
+      });
 
-          // 获取交易详情
-          const tx = await publicClient?.getTransaction({ hash: approveHash });
-          console.log('Approval transaction details:', {
-            hash: approveHash,
-            from: tx?.from,
-            to: tx?.to,
-            value: tx?.value.toString(),
-            input: tx?.input
-          });
+      // 等待授权交易确认
+      console.log('Waiting for approval transaction confirmation...');
+      const receipt = await waitForTransactionReceipt(config, { 
+        hash: approveHash,
+        timeout: 60000 // 60 秒超时
+      });
 
-          // 等待授权交易确认
-          console.log('Waiting for approval transaction confirmation...');
-          const receipt = await waitForTransactionReceipt(config, {
-            hash: approveHash,
-            timeout: 60000 // 设置 60 秒超时
-          });
+      console.log('Approval transaction receipt:', {
+        status: receipt.status,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString(),
+        effectiveGasPrice: receipt.effectiveGasPrice?.toString()
+      });
 
-          console.log('Approval transaction receipt:', {
-            status: receipt.status,
-            blockNumber: receipt.blockNumber,
-            gasUsed: receipt.gasUsed.toString(),
-            effectiveGasPrice: receipt.effectiveGasPrice?.toString()
-          });
-
-          if (receipt.status === 'reverted') {
-            // 尝试获取具体的错误信息
-            const tx = await publicClient?.getTransaction({ hash: approveHash });
-            console.error('Failed transaction details:', {
-              hash: approveHash,
-              from: tx?.from,
-              to: tx?.to,
-              value: tx?.value.toString(),
-              input: tx?.input
-            });
-
-            // 尝试模拟交易以获取错误原因
-            try {
-              await publicClient?.simulateContract({
-                address: currentAddresses.MYTOKEN as `0x${string}`,
-                abi: MY_TOKEN_ABI,
-                functionName: 'approve',
-                args: [currentAddresses.TOKEN_BANK, 2n ** 256n - 1n],
-                account: address
-              });
-            } catch (simError) {
-              console.error('Transaction simulation error:', simError);
-              throw new Error(`Approval simulation failed: ${(simError as Error).message}`);
-            }
-
-            throw new Error('Token approval transaction reverted');
-          }
-
-          // 验证授权是否成功
-          const newAllowance = await publicClient?.readContract({
-            address: currentAddresses.MYTOKEN as `0x${string}`,
-            abi: MY_TOKEN_ABI,
-            functionName: 'allowance',
-            args: [address, currentAddresses.TOKEN_BANK]
-          }) as bigint | undefined;
-
-          console.log('New allowance after approval:', {
-            newAllowance: newAllowance?.toString(),
-            required: amount.toString(),
-            isApproved: newAllowance && newAllowance >= amount
-          });
-
-          if (!newAllowance || newAllowance < amount) {
-            throw new Error('Token approval verification failed');
-          }
-
-          message.success('Token approved successfully!');
-        } catch (error) {
-          console.error('Token approval process failed:', error);
-          // 尝试获取更详细的错误信息
-          if (error instanceof Error) {
-            const errorMessage = error.message;
-            if (errorMessage.includes('user rejected')) {
-              message.error('Transaction was rejected by user');
-            } else if (errorMessage.includes('insufficient funds')) {
-              message.error('Insufficient funds for gas');
-            } else if (errorMessage.includes('timeout')) {
-              message.error('Transaction confirmation timeout');
-            } else {
-              message.error(`Token approval failed: ${errorMessage}`);
-            }
-          } else {
-            message.error('Token approval failed with unknown error');
-          }
-          return;
-        }
+      if (receipt.status === 'reverted') {
+        throw new Error('Token approval transaction reverted');
       }
+
+      // 验证授权是否成功
+      const newAllowance = await publicClient?.readContract({
+        address: currentAddresses.MYTOKEN as `0x${string}`,
+        abi: MY_TOKEN_ABI,
+        functionName: 'allowance',
+        args: [address, currentAddresses.TOKEN_BANK]
+      }) as bigint | undefined;
+
+      console.log('New allowance after approval:', {
+        newAllowance: newAllowance?.toString(),
+        required: amount.toString(),
+        isApproved: newAllowance && newAllowance >= amount
+      });
+
+      if (!newAllowance || newAllowance < amount) {
+        throw new Error('Token approval verification failed');
+      }
+
+      message.success('Token approved successfully!');
+      return true;
     } catch (error) {
-      console.error('Token approval check failed:', error);
-      message.error('Token approval check failed: ' + (error as Error).message);
-      return;
+      console.error('Token approval failed:', error);
+      message.error('Token approval failed: ' + (error as Error).message);
+      return false;
     }
-  }
+  };
 
   const handleDeposit = async () => {
     try {
@@ -386,6 +334,7 @@ const TokenBank = () => {
       console.log('{ functionName, args, value }->', { functionName, args, value });
 
       const is_eth = selectedToken.symbol === 'ETH';
+      const amount = parseEther(inputAmount);
 
       // 验证合约地址
       console.log('Contract addresses check:', {
@@ -398,56 +347,10 @@ const TokenBank = () => {
 
       // 如果是 ERC20 token，先检查授权
       if (!is_eth) {
-        handleTokenApprove();
-      }
-
-      // 在存款前再次验证授权
-      const finalAllowance = await publicClient?.readContract({
-        address: currentAddresses.MYTOKEN as `0x${string}`,
-        abi: MY_TOKEN_ABI,
-        functionName: 'allowance',
-        args: [address, currentAddresses.TOKEN_BANK]
-      }) as bigint | undefined;
-
-      const amount = parseEther(inputAmount);
-
-      console.log('Final allowance check before deposit:', {
-        allowance: finalAllowance?.toString(),
-        required: amount.toString(),
-        hasEnoughAllowance: finalAllowance && finalAllowance >= amount
-      });
-
-      if (!finalAllowance || finalAllowance < amount) {
-        throw new Error('Insufficient token allowance after approval');
-      }
-
-      // 验证合约中的 token 余额
-      const contractBalance = await publicClient?.readContract({
-        address: currentAddresses.MYTOKEN as `0x${string}`,
-        abi: MY_TOKEN_ABI,
-        functionName: 'balanceOf',
-        args: [currentAddresses.TOKEN_BANK]
-      }) as bigint | undefined;
-
-      console.log('Contract token balance check:', {
-        contractBalance: contractBalance?.toString(),
-        required: amount.toString(),
-        hasEnoughBalance: contractBalance && contractBalance >= amount
-      });
-
-      // 模拟存款交易
-      try {
-        await publicClient?.simulateContract({
-          address: currentAddresses.TOKEN_BANK as `0x${string}`,
-          abi: TOKEN_BANK_ABI,
-          functionName: 'depositToken',
-          args: [currentAddresses.MYTOKEN, amount],
-          account: address
-        });
-        console.log('Deposit simulation successful');
-      } catch (simError) {
-        console.error('Deposit simulation failed:', simError);
-        throw new Error(`Deposit simulation failed: ${(simError as Error).message}`);
+        const approved = await handleTokenApprove(amount);
+        if (!approved) {
+          return; // 如果授权失败，直接返回
+        }
       }
 
       // 执行存款

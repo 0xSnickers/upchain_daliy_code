@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./ITokenReceiver.sol";
 
 contract NFTMarket is ReentrancyGuard, ITokenReceiver {
@@ -64,21 +64,26 @@ contract NFTMarket is ReentrancyGuard, ITokenReceiver {
     /**
      * @dev 购买 NFT
      * @param nftContract NFT合约地址
+     * @param token 交易的 token
      * @param tokenId NFT的ID
      * @param amount token 数量
      */
-    function buyNFT(address nftContract, uint256 tokenId, uint256 amount) external nonReentrant {
+    function buyNFT(address nftContract, address token, uint256 tokenId, uint256 amount) external nonReentrant {
         Listing storage listing = _listings[nftContract][tokenId];
         // require(amount >= listing.price, "NFTMarket: insufficient payment");
         // require(listing.isActive, "NFTMarket: NFT not for sale");
         // require(listing.seller != msg.sender, "NFTMarket: cannot buy your own NFT");
-        _verificationBuyNFT(nftContract,tokenId,amount, msg.sender);
+        _verificationBuyNFT(nftContract, tokenId, amount, msg.sender);
 
+         // 计算手续费
+        uint256 fee = (listing.price * feePercentage) / 10000;
+        uint256 sellerAmount = listing.price - fee;
 
         // 转移 NFT
         IERC721(nftContract).transferFrom(listing.seller, msg.sender, tokenId);
+         // 转移代币给卖家
+        IERC20(token).transfer(listing.seller, sellerAmount);
 
-        
         listing.isActive = false;
 
         emit NFTSold(nftContract, tokenId, msg.sender, listing.price);
@@ -99,9 +104,8 @@ contract NFTMarket is ReentrancyGuard, ITokenReceiver {
         // 解码数据
         (address nftContract, uint256 tokenId) = abi.decode(data, (address, uint256));
 
-        _verificationBuyNFT(nftContract,tokenId,amount, sender);
-
         Listing storage listing = _listings[nftContract][tokenId];
+        _verificationBuyNFT(nftContract,tokenId,amount, sender);
         // require(listing.isActive, "NFTMarket: NFT not for sale");
         // require(amount >= listing.price, "NFTMarket: insufficient payment");
         // require(listing.seller != sender, "NFTMarket: cannot buy your own NFT");

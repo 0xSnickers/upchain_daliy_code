@@ -4,23 +4,34 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-
-contract TokenBank is ReentrancyGuard {
+interface ITokenBank {
+    function changeOwner(address _sender) external;
+    function deposit(uint256 amount) external;
+    function withdraw(uint256 amount) external;
+}
+contract TokenBank is ITokenBank, ReentrancyGuard{
     using Address for address;
     address public immutable token_address;
+    address public owner;
     // 存储每个用户对每种代币的余额
     mapping(address => uint256) public _balances;
-
     // 存储总存款量
     uint256 public _totalDeposits;
     // 事件定义
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
-
-    constructor(address token_address_) {
-        token_address = token_address_;
+    modifier onlyOwner(){
+        require(msg.sender == owner, "Only owner can call this");
+        _;
     }
-    function deposit(uint256 amount) public nonReentrant {
+    constructor(address token_address_, address _owner) {
+        token_address = token_address_;
+        owner = _owner;
+    }
+    function changeOwner(address _sender) external onlyOwner{
+        owner = _sender;
+    }
+    function deposit(uint256 amount) external nonReentrant {
         require(amount > 0, "TokenBank: amount must be greater than 0");
 
         // 从用户地址转移代币到合约
@@ -38,7 +49,7 @@ contract TokenBank is ReentrancyGuard {
         emit Deposit(msg.sender, amount);
     }
 
-    function withdraw(uint256 amount) public nonReentrant {
+    function withdraw(uint256 amount) external onlyOwner nonReentrant {
         require(amount > 0, "TokenBank: amount must be greater than 0");
         require(
             _balances[msg.sender] >= amount,
