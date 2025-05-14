@@ -2,13 +2,11 @@
 pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
-import {MyToken} from "../src/MyToken.sol";
-import {TokenBank} from "../src/TokenBank.sol";
-
-contract CounterScript is Script {
+import {MyToken} from "../src/TokenBank/MyToken.sol";
+import {TokenBank} from "../src/TokenBank/TokenBank.sol";
+contract DeployTokenBankScript is Script {
     MyToken public myToken;
     TokenBank public tokenBank;
-
     function setUp() public {}
 
     function run() public {

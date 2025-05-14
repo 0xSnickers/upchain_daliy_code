@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract BaseERC721 is ERC721, Ownable {
+// ERC721Enumerable: 基于 ERC721 拓展
+contract MyERC721Enumerable is ERC721Enumerable, Ownable {
     uint256 public nextTokenId;
     string private baseTokenURI;
 

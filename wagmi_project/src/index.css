@@ -23,3 +23,7 @@
     color: #181818;
   }
 }
+
+.ant-layout-content{
+  margin: 10px 0 !important;
+}
