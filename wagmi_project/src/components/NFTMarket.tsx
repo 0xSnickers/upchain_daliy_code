@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Card, Button, Form, Input, message, Space, Typography, Select, Table, Tag, Modal, Row, Col } from 'antd';
+import { Card, Button, Form, Input, message, Space, Typography, Select, Table, Tag, Modal, Row, Col, Image, Divider } from 'antd';
 import { useAccount, useWriteContract, useReadContract, useConfig, useChainId, useBalance, usePublicClient } from 'wagmi';
 import { waitForTransactionReceipt } from 'wagmi/actions';
-import { anvil, sepolia, getContractAddresses } from '@/config';
-import { NFT_MARKET_ABI, BASE_ERC721_ABI } from '@/config';
-import { parseEther, formatEther,isAddress } from 'viem';
+import { NFT_MARKET_ABI, ERC721_NFT_ABI } from '@/config';
+import { parseEther, formatEther } from 'viem';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -29,9 +28,7 @@ interface NFTInfo {
 
 const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
   const [form] = Form.useForm();
-  const [queryForm] = Form.useForm();
   const { address } = useAccount();
-  const chainId = useChainId();
   const [listLoading, setListLoading] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
   const [unlistLoading, setUnlistLoading] = useState(false);
@@ -40,7 +37,6 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
   const config = useConfig();
   const publicClient = usePublicClient();
   const [nftInfo, setNftInfo] = useState<NFTInfo | null>(null);
-  const [queryLoading, setQueryLoading] = useState(false);
 
   // 获取用户 ETH 余额
   const { data: ethBalance } = useBalance({
@@ -57,23 +53,23 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
   // 获取 NFT 合约信息
   const { data: nftName } = useReadContract({
     address: nftAddress,
-    abi: BASE_ERC721_ABI,
+    abi: ERC721_NFT_ABI,
     functionName: 'name',
   });
 
   const { data: nftSymbol } = useReadContract({
     address: nftAddress,
-    abi: BASE_ERC721_ABI,
+    abi: ERC721_NFT_ABI,
     functionName: 'symbol',
   });
 
   // 获取用户拥有的 NFT 列表
   const { data: balanceOf, refetch: balanceOfRefetch } = useReadContract({
     address: nftAddress,
-    abi: BASE_ERC721_ABI,
+    abi: ERC721_NFT_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-  });
+  }) as any;
 
   // 获取所有上架的 NFT
   const [listings, setListings] = useState<NFTListing[]>([]);
@@ -81,9 +77,13 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
   // 获取当前已铸造的 NFT 数量
   const { data: nextTokenId } = useReadContract({
     address: nftAddress,
-    abi: BASE_ERC721_ABI,
+    abi: ERC721_NFT_ABI,
     functionName: 'nextTokenId',
   });
+
+  // 获取用户拥有的所有 NFT
+  const [ownedNFTs, setOwnedNFTs] = useState<bigint[]>([]);
+  const [loadingOwnedNFTs, setLoadingOwnedNFTs] = useState(false);
 
   // 获取所有上架的 NFT 信息
   useEffect(() => {
@@ -95,7 +95,7 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
 
       console.log('Fetching listings, nextTokenId:', nextTokenId.toString());
       const activeListings: NFTListing[] = [];
-      
+
       // 从 1 开始遍历到 nextTokenId-1，因为 nextTokenId 是下一个要铸造的 ID
       for (let i = 0; i < Number(nextTokenId); i++) {
         try {
@@ -108,7 +108,7 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
           }) as [string, bigint, boolean];
 
           console.log('Listing for tokenId', i, ':', listing);
-          
+
           if (listing && listing[2]) { // isActive
             console.log('Found active listing for tokenId:', i);
             activeListings.push({
@@ -144,6 +144,47 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
     }
   }, [nextTokenId, marketAddress, nftAddress, publicClient]);
 
+  // 获取用户拥有的所有 NFT
+  useEffect(() => {
+    const fetchOwnedNFTs = async () => {
+      if (!address || !publicClient || !balanceOf || balanceOf === 0n) {
+        setOwnedNFTs([]);
+        return;
+      }
+
+      setLoadingOwnedNFTs(true);
+      try {
+        const tokenIds: bigint[] = [];
+        const token_imgs: string[] = [];
+        const balance = Number(balanceOf);
+
+        for (let i = 0; i < balance; i++) {
+          try {
+            // 获取用户在索引 i 处拥有的 token ID
+            const tokenId = await publicClient.readContract({
+              address: nftAddress,
+              abi: ERC721_NFT_ABI,
+              functionName: 'tokenOfOwnerByIndex',
+              args: [address, BigInt(i)],
+            }) as bigint;
+            tokenIds.push(tokenId);
+          } catch (error) {
+            console.error(`Error fetching token at index ${i}:`, error);
+          }
+        }
+
+        setOwnedNFTs(tokenIds);
+      } catch (error) {
+        console.error('Error fetching owned NFTs:', error);
+        message.error('Failed to load your NFTs');
+      } finally {
+        setLoadingOwnedNFTs(false);
+      }
+    };
+
+    fetchOwnedNFTs();
+  }, [address, publicClient, balanceOf, nftAddress]);
+
   const { writeContractAsync: listAsync } = useWriteContract();
   const { writeContractAsync: buyAsync } = useWriteContract();
   const { writeContractAsync: unlistAsync } = useWriteContract();
@@ -164,7 +205,7 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
       // 检查 NFT 是否已授权给市场合约
       const isApproved = await publicClient?.readContract({
         address: nftAddress,
-        abi: BASE_ERC721_ABI,
+        abi: ERC721_NFT_ABI,
         functionName: 'isApprovedForAll',
         args: [address, marketAddress],
       });
@@ -173,7 +214,7 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
         message.info('Approving NFT transfer...');
         const approveHash = await approveAsync({
           address: nftAddress,
-          abi: BASE_ERC721_ABI,
+          abi: ERC721_NFT_ABI,
           functionName: 'setApprovalForAll',
           args: [marketAddress, true],
         });
@@ -290,13 +331,12 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
   // 处理查询 NFT 信息
   const handleQueryNFT = async (values: { tokenId: string }) => {
     try {
-      setQueryLoading(true);
       const tokenId = BigInt(values.tokenId);
 
       // 获取 NFT 所有者
       const owner = await publicClient?.readContract({
         address: nftAddress,
-        abi: BASE_ERC721_ABI,
+        abi: ERC721_NFT_ABI,
         functionName: 'ownerOf',
         args: [tokenId],
       }) as `0x${string}`;
@@ -334,7 +374,6 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
       console.error('Query failed:', error);
       message.error('Query failed: ' + (error as Error).message);
     } finally {
-      setQueryLoading(false);
     }
   };
 
@@ -369,7 +408,7 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
           {record.seller === address ? (
             <Button
               danger
-              loading={unlistLoading}
+              disabled={unlistLoading}
               onClick={() => handleUnlist(record.tokenId)}
             >
               Unlist
@@ -377,8 +416,7 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
           ) : (
             <Button
               type="primary"
-              loading={buyLoading}
-              disabled={!address}
+              disabled={!address || buyLoading}
               onClick={() => {
                 setSelectedNFT(record);
                 setIsModalVisible(true);
@@ -394,7 +432,7 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
 
   return (
     <div className="space-y-6">
-      <Title level={3} style={{ margin: 0,textAlign:"center" }}>NFT Market</Title>
+      <Title level={3} style={{ margin: 0, textAlign: "center" }}>NFT Market</Title>
       <Card style={{ maxWidth: 1200, margin: '0 auto', marginTop: 24 }}>
         <Space direction="vertical" style={{ width: '100%', marginBottom: 24 }}>
           <Text>Market Contract: {nftName as string} ({nftSymbol as string})</Text>
@@ -407,167 +445,123 @@ const NFTMarket = ({ marketAddress, nftAddress }: NFTMarketProps) => {
           )}
         </Space>
 
-        <Row gutter={24} style={{ marginBottom: 24 }}>
-          <Col span={12}>
-            <Card title="List Your NFT">
-              <Form form={form} onFinish={handleList} layout="vertical">
-                <Form.Item
-                  name="tokenId"
-                  label="Token ID"
-                  rules={[{ required: true, message: 'Please input token ID!' }]}
-                >
-                  <Input placeholder="Enter token ID" />
-                </Form.Item>
-                <Form.Item
-                  name="price"
-                  label="Price (ETH)"
-                  rules={[{ required: true, message: 'Please input price!' }]}
-                >
-                  <Input placeholder="Enter price in ETH" />
-                </Form.Item>
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={listLoading}
-                    disabled={!address}
-                  >
-                    List NFT
-                  </Button>
-                </Form.Item>
-              </Form>
-            </Card>
-          </Col>
-
-          <Col span={12}>
-            <Card title="Query NFT Info">
-              <Form form={queryForm} onFinish={handleQueryNFT} layout="vertical">
-                <Form.Item
-                  name="tokenId"
-                  label="Token ID"
-                  rules={[{ required: true, message: 'Please input token ID!' }]}
-                >
-                  <Input placeholder="Enter token ID to query" />
-                </Form.Item>
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    disabled={!address}
-                    loading={queryLoading}
-                  >
-                    Query NFT
-                  </Button>
-                </Form.Item>
-              </Form>
-
-              {nftInfo && (
-                <Card type="inner" title={`NFT #${nftInfo.tokenId.toString()}`} style={{ marginTop: 16 }}>
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <Text>Owner: <Tag color="blue">{nftInfo.owner}</Tag></Text>
-                    {nftInfo.listing ? (
-                      <>
-                        <Text>Status: <Tag color="green">Listed</Tag></Text>
-                        <Text>Price: {formatEther(nftInfo.listing.price)} ETH</Text>
-                        <Text>Seller: <Tag color="blue">{nftInfo.listing.seller}</Tag></Text>
-                        {address && (
-                          <>
-                            {nftInfo.listing.seller === address ? (
-                              <Button
-                                danger
-                                loading={unlistLoading}
-                                onClick={() => handleUnlist(nftInfo.tokenId)}
-                              >
-                                Unlist
-                              </Button>
-                            ) : (
+        {address && balanceOf && (
+          <>
+            <Divider>Your NFTs</Divider>
+            <Row gutter={[16, 16]}>
+              {loadingOwnedNFTs ? (
+                <Col span={24} style={{ textAlign: 'center' }}>
+                  <Text>Loading your NFTs...</Text>
+                </Col>
+              ) : ownedNFTs.length > 0 ? (
+                ownedNFTs.map(tokenId => (
+                  <Col key={tokenId.toString()} xs={24} sm={12} md={8} lg={6}>
+                    <Card
+                      hoverable
+                    >
+                      <Card.Meta
+                        title={`NFT #${tokenId.toString()}`}
+                        description={
+                          <Space direction="vertical" style={{ width: '100%' }}>
+                            <Input
+                              addonAfter={`$ETH`}
+                              style={{ width: '100%' }}
+                              onChange={(e) => {
+                                form.setFieldsValue({
+                                  tokenId: tokenId.toString(),
+                                  price: e.target.value
+                                });
+                              }}
+                            />
+                            <Space>
                               <Button
                                 type="primary"
-                                loading={buyLoading}
-                                disabled={!address}
+                                size="small"
+                                disabled={listLoading}
                                 onClick={() => {
-                                  setSelectedNFT(nftInfo.listing!);
-                                  setIsModalVisible(true);
+                                  const price = form.getFieldValue('price');
+                                  if (price) {
+                                    handleList({
+                                      tokenId: tokenId.toString(),
+                                      price: price
+                                    });
+                                  } else {
+                                    message.error('Please enter a price');
+                                  }
                                 }}
                               >
-                                Buy
+                                List
                               </Button>
-                            )}
-                          </>
-                        )}
-                        {!address && (
-                          <Text type="secondary">Connect wallet to buy or unlist</Text>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <Text>Status: <Tag color="default">Not Listed</Tag></Text>
-                        {address && nftInfo.owner === address && (
-                          <Form form={form} onFinish={handleList} layout="vertical">
-                            <Form.Item
-                              name="tokenId"
-                              initialValue={nftInfo.tokenId.toString()}
-                              hidden
-                            >
-                              <Input />
-                            </Form.Item>
-                            <Form.Item
-                              name="price"
-                              label="Price (ETH)"
-                              rules={[{ required: true, message: 'Please input price!' }]}
-                            >
-                              <Input placeholder="Enter price in ETH" />
-                            </Form.Item>
-                            <Form.Item>
                               <Button
-                                type="primary"
-                                htmlType="submit"
-                                loading={listLoading}
-                                disabled={!address}
+                                size="small"
+                                onClick={() => handleQueryNFT({ tokenId: tokenId.toString() })}
                               >
-                                List NFT
+                                View Details
                               </Button>
-                            </Form.Item>
-                          </Form>
-                        )}
-                        {!address && nftInfo.owner === address && (
-                          <Text type="secondary">Connect wallet to list this NFT</Text>
-                        )}
-                      </>
-                    )}
-                  </Space>
-                </Card>
+                            </Space>
+                          </Space>
+                        }
+                      />
+                    </Card>
+                  </Col>
+                ))
+              ) : (
+                <Col span={24} style={{ textAlign: 'center' }}>
+                  <Text>You don't own any NFTs yet.</Text>
+                </Col>
               )}
-            </Card>
-          </Col>
-        </Row>
-
-        <Card title="Active Listings">
-          <Table
-            columns={columns}
-            dataSource={listings}
-            rowKey="tokenId"
-            pagination={{ pageSize: 5 }}
-          />
-        </Card>
-      </Card>
-
-      <Modal
-        title="Confirm Purchase"
-        open={isModalVisible}
-        onOk={() => selectedNFT && handleBuy(selectedNFT)}
-        onCancel={() => setIsModalVisible(false)}
-        confirmLoading={buyLoading}
-      >
-        {selectedNFT && (
-          <Space direction="vertical">
-            <Text>Token ID: {selectedNFT.tokenId.toString()}</Text>
-            <Text>Price: {formatEther(selectedNFT.price)} ETH</Text>
-            <Text>Fee: {formatEther((selectedNFT.price * (feePercentage || 0n))  / 10000n)} ETH</Text>
-            <Text>Total: {formatEther(selectedNFT.price)} ETH</Text>
-          </Space>
+            </Row>
+          </>
         )}
-      </Modal>
+
+        {nftInfo && (
+          <Card title={`NFT #${nftInfo.tokenId.toString()} Info`} style={{ marginTop: 24 }}>
+            <p><strong>Owner:</strong> {nftInfo.owner === address ? 'You' : nftInfo.owner}</p>
+            {nftInfo.listing && (
+              <>
+                <p><strong>Listed:</strong> Yes</p>
+                <p><strong>Price:</strong> {formatEther(nftInfo.listing.price)} ETH</p>
+                <p><strong>Seller:</strong> {nftInfo.listing.seller === address ? 'You' : nftInfo.listing.seller}</p>
+              </>
+            )}
+          </Card>
+        )}
+
+        <Divider>Market Listings</Divider>
+        <Table
+          dataSource={listings}
+          columns={columns}
+          rowKey={(record) => record.tokenId.toString()}
+          pagination={{ pageSize: 5 }}
+        />
+
+        <Modal
+          title="Confirm Purchase"
+          open={isModalVisible}
+          onCancel={() => setIsModalVisible(false)}
+          footer={[
+            <Button key="back" onClick={() => setIsModalVisible(false)}>
+              Cancel
+            </Button>,
+            <Button
+              key="submit"
+              type="primary"
+              loading={buyLoading}
+              onClick={() => selectedNFT && handleBuy(selectedNFT)}
+            >
+              Confirm Purchase
+            </Button>,
+          ]}
+        >
+          {selectedNFT && (
+            <>
+              <p>You are about to purchase NFT #{selectedNFT.tokenId.toString()}</p>
+              <p>Price: {formatEther(selectedNFT.price)} ETH</p>
+              <p>Seller: {selectedNFT.seller}</p>
+            </>
+          )}
+        </Modal>
+      </Card>
     </div>
   );
 };

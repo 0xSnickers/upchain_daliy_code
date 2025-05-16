@@ -138,7 +138,7 @@ function PermitTokenBank() {
 
             message.loading('Signing permit...', 0)
             // Sign the permit data
-            const signature = await signTypedDataAsync({
+            const sign_data:any = {
                 domain: {
                     name: tokenName as string,
                     version: (tokenVersion as any)[2] as string, // version is the third element in the eip712Domain return value
@@ -168,7 +168,10 @@ function PermitTokenBank() {
                     nonce: BigInt(nonce?.toString() || '0'),
                     deadline: deadline,
                 },
-            })
+            }
+            console.log('sign_data------>',sign_data);
+            
+            const signature = await signTypedDataAsync(sign_data)
 
             // Split signature into r, s, v
             const r = signature.slice(0, 66)

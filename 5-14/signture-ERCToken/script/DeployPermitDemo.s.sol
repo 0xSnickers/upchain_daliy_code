@@ -5,7 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {PermitToken} from "../src/PermitToken.sol";
 import {PermitTokenBank} from "../src/PermitTokenBank.sol";
 
-contract SigntureScript is Script {
+contract DeployPermitDemoScript is Script {
     PermitToken public myToken;
     PermitTokenBank public tokenBank;
 

@@ -1,8 +1,8 @@
 import MintNFTComponent from '@/components/MintNFT'
-import { BASE_ERC721_ADDRESS } from "@/config"
+import { BASE_ERC721_ADDRESS, ERC721_NFT_ABI } from "@/config"
 function MintNFT() {
     return (
-        <MintNFTComponent nftAddress={BASE_ERC721_ADDRESS} />
+        <MintNFTComponent nftABI={ERC721_NFT_ABI} nftAddress={BASE_ERC721_ADDRESS} />
     )
 }
 

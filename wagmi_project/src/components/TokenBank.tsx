@@ -3,7 +3,6 @@ import { Card, Input, Button, Form, Select, message, Space, Typography, Tag, Tab
 import { useAccount, useBalance, useWriteContract, useReadContract, useBlockNumber, useConfig, usePublicClient, useChainId } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
 import { MYTOKEN_ADDRESS, MY_TOKEN_ABI, TOKEN_BANK_ABI, anvil, sepolia, getContractAddresses } from '@/config';
-import ConnectWallet from './ConnectWallet';
 // waitForTransactionReceipt: 监听交易是否上链成功
 import { waitForTransactionReceipt } from 'wagmi/actions'
 import { useTokenBankBalances } from '@/hook/useTokenBankBalances';
