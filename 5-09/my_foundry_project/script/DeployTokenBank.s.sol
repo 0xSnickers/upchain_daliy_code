@@ -11,13 +11,13 @@ contract DeployTokenBankScript is Script {
 
     function run() public {
         // 从环境变量中读取私钥对应的地址
-        // uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_LOCAL");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_SEPOLIA");
         // 开始广播交易
-        // vm.startBroadcast(deployerPrivateKey);
-        vm.startBroadcast();
+        vm.startBroadcast(deployerPrivateKey);
+        // vm.startBroadcast();
         // 初始化部署两个合约
-        myToken = new MyToken("Snikers","SNK");
-        console.log("MyToken contract address =>", address(myToken));
+        // myToken = new MyToken("Snikers","SNK");
+        // console.log("MyToken contract address =>", address(myToken));
         tokenBank = new TokenBank();
         console.log("tokenBank contract address =>", address(tokenBank));
         vm.stopBroadcast();

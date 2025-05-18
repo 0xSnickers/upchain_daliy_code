@@ -10,7 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { config, projectId } from '@/config'
 // import { createWeb3Modal } from '@web3modal/wagmi/react'
 import ConnectWallet from './components/ConnectWallet'
-
+import TokenBankWithERC20 from './pages/TokenBankWithERC20'
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
@@ -53,6 +53,12 @@ const Navigation = () => {
       label: 'Permit TokenBank',
       path: '/permit-token-bank'
     },
+    {
+      key: '/token-bank-with-erc20',
+      icon: <FileTextOutlined />,
+      label: 'Token Bank With ERC20',
+      path: '/token-bank-with-erc20'
+    },  
   ];
 
   return (
@@ -104,6 +110,7 @@ function App() {
                 <Route path="/mint-nft" element={<MintNFT />} />
                 <Route path="/nft-market" element={<NFTMarket />} />
                 <Route path="/permit-token-bank" element={<PermitTokenBank />} />
+                <Route path="/token-bank-with-erc20" element={<TokenBankWithERC20 />} />
               </Routes>
             </Content>
             {/* <Footer style={{ textAlign: 'center' }}>

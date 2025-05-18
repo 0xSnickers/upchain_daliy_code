@@ -11,8 +11,8 @@ contract ERC721WithSignatureScript is Script {
 
     function run() public {
         // 从环境变量中读取私钥对应的地址
-        uint256 private_key = vm.envUint("PRIVATE_KEY_LOCAL");
-        // uint256 private_key = vm.envUint("PRIVATE_KEY_SEPOLIA");
+        // uint256 private_key = vm.envUint("PRIVATE_KEY_LOCAL");
+        uint256 private_key = vm.envUint("PRIVATE_KEY_SEPOLIA");
         string memory erc721_base_uri = vm.envString("ERC721_BASE_URI");
         vm.startBroadcast(private_key);
         erc721_with_signature = new ERC721WithSignature("Snikers", "SNK", erc721_base_uri);

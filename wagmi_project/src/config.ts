@@ -21,6 +21,7 @@ const SEPOLIA_RPC_URLS = {
   default: 'https://sepolia.drpc.org',
   // 备用节点
   infura: import.meta.env.VITE_SEPOLIA_INFURA_RPC_URL,
+  local: 'http://127.0.0.1:8545',
 }
 // 创建自定义的 Anvil 链配置
 export const anvil = {
@@ -48,10 +49,12 @@ export const sepolia: Chain = {
   rpcUrls: {
     ...sepoliaChain.rpcUrls,
     default: {
+      // http: [SEPOLIA_RPC_URLS.local],
       http: [SEPOLIA_RPC_URLS.infura],
     },
     public: {
       http: [
+        // SEPOLIA_RPC_URLS.local,
         SEPOLIA_RPC_URLS.infura,
         // SEPOLIA_RPC_URLS.default,
       ],
@@ -64,20 +67,22 @@ export const sepolia: Chain = {
 // 合约地址配置
 export const CONTRACT_ADDRESSES = {
   [anvil.id]: {
-    TOKEN_BANK: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
-    MYTOKEN: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-    BASE_ERC721: '0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3',
+    TOKEN_BANK: '0x4D34f0c563d09DAC60B7E12dDBAaDE86aBd47014',
+    MYTOKEN: '0xF22fFe4336a074491890A5CE4113dCfc37B61Ebe',
+    BASE_ERC721: '0x2d97BBC4B7d5b2c50C810d6539cb339D37Ad2AF6',
     NFT_MARKET: '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E',
-    PERMIT_TOKEN: '0x0E801D84Fa97b50751Dbf25036d067dCf18858bF',
-    PERMIT_TOKEN_BANK: '0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf',
+    PERMIT_TOKEN: '0x03e86E790524019B23E7B4c6fdE3565eD46Ca55d',
+    PERMIT_TOKEN_BANK: '0xB05817b9895482B50CE94c46C4DB37B8D39911eE',
+    TOKEN_BANK_WITH_ERC20TOKEN: '0x24c35b20faF55999735b3fA496F0d4F150771Bc5',
   },
   [sepolia.id]: {
-    TOKEN_BANK: '0xCa1b0083bc23E67A170dF7609c7CD77736D8b52D',
-    MYTOKEN: '0x21059fD1dF5ff7e53F035B0Abc320c6459A30DF5',
-    BASE_ERC721: '0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3',
+    TOKEN_BANK: '0x4D34f0c563d09DAC60B7E12dDBAaDE86aBd47014',
+    MYTOKEN: '0xF22fFe4336a074491890A5CE4113dCfc37B61Ebe',
+    BASE_ERC721: '0x2d97BBC4B7d5b2c50C810d6539cb339D37Ad2AF6',
     NFT_MARKET: '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E',
-    PERMIT_TOKEN: '0x0E801D84Fa97b50751Dbf25036d067dCf18858bF',
-    PERMIT_TOKEN_BANK: '0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf',
+    PERMIT_TOKEN: '0x03e86E790524019B23E7B4c6fdE3565eD46Ca55d',
+    PERMIT_TOKEN_BANK: '0xB05817b9895482B50CE94c46C4DB37B8D39911eE',
+    TOKEN_BANK_WITH_ERC20TOKEN: '0x24c35b20faF55999735b3fA496F0d4F150771Bc5',
   },
 } as const
 
@@ -104,18 +109,20 @@ export const ERC721_NFT_ABI = ERC721_JSON
 export const projectId = import.meta.env.VITE_WC_PROJECT_ID
 console.log('projectId->',projectId);
 
-const chains = [anvil, sepolia] as const
+const chains = [
+  // anvil,
+  sepolia] as const
 
 export const config = createConfig({
   chains,
   connectors: [
-    walletConnect({
-      projectId,
-      showQrModal: true,
-    }),
+    // walletConnect({
+    //   projectId,
+    //   showQrModal: true,
+    // }),
   ],
   transports: {
-    [anvil.id]: http(),
+    // [anvil.id]: http(),
     [sepolia.id]: http(),
   },
 })

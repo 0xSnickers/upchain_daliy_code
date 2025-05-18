@@ -146,7 +146,7 @@ const ConnectWallet = () => {
                 <Button icon={<SwapOutlined />}>
                     {getNetworkName(chainId)}
                 </Button>
-            </Dropdown>
+            </Dropdown> 
             <Dropdown menu={{ items }} placement="bottom">
                 <Button>
                     <WalletFilled />

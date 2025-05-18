@@ -12,15 +12,14 @@ contract DeployPermitDemoScript is Script {
     function setUp() public {}
 
     function run() public {
-                // 从环境变量中读取私钥对应的地址
-                
-        uint256 private_key_sepolia = vm.envUint("PRIVATE_KEY_LOCAL");
-        // uint256 private_key_sepolia = vm.envUint("PRIVATE_KEY_SEPOLIA");
+        // uint256 private_key_sepolia = vm.envUint("PRIVATE_KEY_LOCAL");
+        uint256 private_key_sepolia = vm.envUint("PRIVATE_KEY_SEPOLIA");
         vm.startBroadcast(private_key_sepolia);
 
-        myToken = new PermitToken("Snikers", "SNK");
-        console.log("PermitToken address => ", address(myToken));  
-        tokenBank = new PermitTokenBank(address(myToken));
+        // myToken = new PermitToken("Snikers", "SNK");
+        // console.log("PermitToken address => ", address(myToken));  
+        // tokenBank = new PermitTokenBank(address(myToken));
+        tokenBank = new PermitTokenBank(0x03e86E790524019B23E7B4c6fdE3565eD46Ca55d);
         console.log("PermitTokenBank address => ", address(tokenBank));
 
         vm.stopBroadcast();
