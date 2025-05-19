@@ -34,4 +34,4 @@
 >
 > 内部使用 `EventEmitter`，易于集成复杂系统
 
-![描述](https://github.com/0xSnickers/upchain_daliy_code/tree/main/backend_service/assets/01.jpg)
+![描述](./assets/01.jpg)
