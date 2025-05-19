@@ -6,18 +6,18 @@ contract WalletFactory {
     constructor() {}
 
     event WalletDeployed(address wallet, address owner);
-
+    // @desc 获取合约构造函数编码后的字节码
     function getBytecode(address owner) public pure returns (bytes memory) {
         return abi.encodePacked(
                 type(SimpleWallet).creationCode, // 被部署的合约
                 abi.encode(owner)                // owner
             );
     }
-
+    // @desc 获取合约构造函数编码后的字节码的 keccak256 值
     function getKeccak256ForByteCode(bytes memory _bytecode) public pure returns (bytes32){
         return keccak256(_bytecode);
     }
-
+    // @desc 获取盐值的 keccak256 值
     function getKeccak256ForSalt(string memory _salt) public pure returns (bytes32){
         return keccak256(abi.encodePacked(_salt));
     }

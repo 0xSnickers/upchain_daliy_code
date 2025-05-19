@@ -41,19 +41,19 @@ request.interceptors.response.use(
 export const whitelistApi = {
   // Save whitelist signature
   saveSignature: async (address: string, signature: string, tokenId: number, deadline: number): Promise<ApiResponse<void>> => {
-    const response = await request.post<ApiResponse<void>>('/user', { deadline, tokenId, address, signature });
+    const response = await request.post<ApiResponse<void>>('/api/userPermit', { deadline, tokenId, address, signature });
     return response.data as ApiResponse<void>;
   },
 
   // Get whitelist signature
   getSignature: async (address: string): Promise<ApiResponse<any>> => {
-    const response = await request.get<ApiResponse<any>>(`/user/${address}`);
+    const response = await request.get<ApiResponse<any>>(`/api/userPermit/${address}`);
     return response.data as ApiResponse<any>;
   },
 
   // Delete whitelist signature
   deleteSignature: async (address: string): Promise<ApiResponse<void>> => {
-    const response = await request.delete<ApiResponse<void>>(`/user/${address}`);
+    const response = await request.delete<ApiResponse<void>>(`/api/userPermit/${address}`);
     return response.data as ApiResponse<void>;
   },
 };
