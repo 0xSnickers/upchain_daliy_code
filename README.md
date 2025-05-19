@@ -13,6 +13,7 @@
 │ ├── 5-12/ # 多签钱包/合约 ｜ 助记词 / 私钥
 │ ├── 5-14/ # 签名 | EIP2612  | EIP712
 │ ├── 5-16/ # Create2 | Create3 | 最小代理
-│ ├── backend_service/ # nodejs 服务
-│ └── wagmi_project/ # 前端项目（接入ABI+Contract Address）
+│ ├── 5-19/ # Gas 优化和Slot
+│ ├── backend_service/ # Nodejs + Viem 服务
+│ └── wagmi_project/ # React 前端项目（接入ABI + Contract Address）
 ```

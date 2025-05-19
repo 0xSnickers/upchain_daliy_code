@@ -1,0 +1,82 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
+import "../src/NFTMarket.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+contract MockNFT is ERC721 {
+    constructor() ERC721("MockNFT", "MNFT") {}
+
+    function mint(address to, uint256 tokenId) external {
+        _mint(to, tokenId);
+    }
+}
+
+contract NFTMarketTest is Test {
+    NFTMarket public market;
+    MockNFT public nft;
+    address public seller = address(1);
+    address public buyer = address(2);
+    address public owner = makeAddr("0xowner");
+
+    function setUp() public {
+        market = new NFTMarket();
+        nft = new MockNFT();
+        
+        // Mint NFT to seller
+        nft.mint(seller, 1);
+        
+        // Setup balances
+        vm.deal(seller, 10 ether);
+        vm.deal(buyer, 10 ether);
+    }
+
+    function test_ListNFT() public {
+        vm.startPrank(seller);
+        nft.approve(address(market), 1);
+        market.list(address(nft), 1, 1 ether);
+        vm.stopPrank();
+    }
+
+    function test_BuyNFT() public {
+        // First list the NFT
+        vm.startPrank(seller);
+        nft.approve(address(market), 1);
+        market.list(address(nft), 1, 1 ether);
+        vm.stopPrank();
+
+        // Then buy it
+        vm.startPrank(buyer);
+        market.buyNFT{value: 1 ether}(address(nft), 1);
+        vm.stopPrank();
+    }
+
+    function test_UnlistNFT() public {
+        vm.startPrank(seller);
+        nft.approve(address(market), 1);
+        market.list(address(nft), 1, 1 ether);
+        market.unlist(address(nft), 1);
+        vm.stopPrank();
+    }
+
+    function test_UpdateFeePercentage() public {
+        market.updateFeePercentage(300); // 3%
+    }
+
+    function test_WithdrawFees() public {
+        // First list and buy NFT to generate fees
+        vm.startPrank(seller);
+        nft.approve(address(market), 1);
+        market.list(address(nft), 1, 1 ether);
+        vm.stopPrank();
+
+        vm.startPrank(buyer);
+        market.buyNFT{value: 1 ether}(address(nft), 1);
+        vm.stopPrank();
+        console.log("owner balance =>",address(owner).balance);
+        // Then withdraw fees
+        market.withdrawFees(owner, 0.025 ether);
+    }
+} 
