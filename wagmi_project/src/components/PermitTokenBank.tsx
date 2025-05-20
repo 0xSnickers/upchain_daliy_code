@@ -1,7 +1,7 @@
-import { useAccount, useReadContract, useWriteContract, useSignTypedData, useChainId } from 'wagmi'
+import { useAccount, useReadContract, useWriteContract, useSignTypedData, useChainId, usePublicClient } from 'wagmi'
 import { parseEther } from 'viem'
-import { useState, useEffect } from 'react'
-import { Input, Button, Card, message, Space, Typography } from 'antd'
+import { useState, useEffect, useCallback } from 'react'
+import { Input, Button, Card, message, Space, Typography, Table } from 'antd'
 import PermitTokenABI from '@/abi/PermitToken.json'
 import PermitTokenBankABI from '@/abi/PermitTokenBank.json'
 import { PERMIT_TOKEN, PERMIT_TOKEN_BANK } from '@/config'
@@ -11,9 +11,11 @@ const { Text } = Typography
 function PermitTokenBank() {
     const { address } = useAccount()
     const chainId = useChainId()
+    const publicClient = usePublicClient()
     const [amount, setAmount] = useState('')
     const [loading, setLoading] = useState(false)
     const [isValidAddresses, setIsValidAddresses] = useState(false)
+    const [topDepositors, setTopDepositors] = useState<Array<{ address: string; amount: bigint }>>([])
 
     // Validate contract addresses
     useEffect(() => {
@@ -100,6 +102,33 @@ function PermitTokenBank() {
     // Write contract for permit deposit
     const { writeContractAsync } = useWriteContract()
 
+    // Read total number of top depositors
+    const { data: topDepositorsCount } = useReadContract({
+        address: isValidAddresses ? (PERMIT_TOKEN_BANK as `0x${string}`) : undefined,
+        abi: PermitTokenBankABI,
+        functionName: 'getTopDepositorsCount',
+    })
+
+    // Read all top depositors at once
+    const { data: topDepositorsData, refetch: refetchTopDepositors } = useReadContract({
+        address: isValidAddresses ? (PERMIT_TOKEN_BANK as `0x${string}`) : undefined,
+        abi: PermitTokenBankABI,
+        functionName: 'getTopDepositorWithNumber',
+    })
+
+    // Update top depositors state when data changes
+    useEffect(() => {
+        if (!isValidAddresses || !topDepositorsData) return
+
+        const depositors = (topDepositorsData as Array<{ user: string; amount: bigint }>)
+            .map((depositor) => ({
+                address: depositor.user,
+                amount: depositor.amount,
+            })).sort((a, b) => (b.amount > a.amount ? 1 : -1)) // 降序排序
+
+        setTopDepositors(depositors)
+    }, [isValidAddresses, topDepositorsData])
+
     const handlePermitDeposit = async () => {
         try {
             if (!isValidAddresses) {
@@ -141,7 +170,7 @@ function PermitTokenBank() {
             const sign_data:any = {
                 domain: {
                     name: tokenName as string,
-                    version: (tokenVersion as any)[2] as string, // version is the third element in the eip712Domain return value
+                    version: (tokenVersion as any)[2] as string,
                     chainId: BigInt(chainId),
                     verifyingContract: PERMIT_TOKEN as `0x${string}`,
                 },
@@ -191,11 +220,12 @@ function PermitTokenBank() {
             message.success('Token deposit successful!')
             setAmount('')
             
-            // Refetch balances after successful deposit
+            // Refetch all data after successful deposit
             await Promise.all([
                 refetchNonce(),
                 refetchTokenBalance(),
-                refetchBankBalance()
+                refetchBankBalance(),
+                refetchTopDepositors()
             ])
         } catch (error) {
             message.destroy()
@@ -266,10 +296,11 @@ function PermitTokenBank() {
             message.success('Token deposit successful!')
             setAmount('')
             
-            // Refetch balances after successful deposit
+            // Refetch all data after successful deposit
             await Promise.all([
                 refetchTokenBalance(),
-                refetchBankBalance()
+                refetchBankBalance(),
+                refetchTopDepositors()
             ])
         } catch (error) {
             message.destroy()
@@ -327,10 +358,11 @@ function PermitTokenBank() {
             message.success('Token withdrawal successful!')
             setAmount('')
             
-            // Refetch balances after successful withdrawal
+            // Refetch all data after successful withdrawal
             await Promise.all([
                 refetchTokenBalance(),
-                refetchBankBalance()
+                refetchBankBalance(),
+                refetchTopDepositors()
             ])
         } catch (error) {
             message.destroy()
@@ -350,6 +382,31 @@ function PermitTokenBank() {
             setLoading(false)
         }
     }
+
+    const columns = [
+        {
+            title: 'Rank',
+            dataIndex: 'rank',
+            key: 'rank',
+            render: (_: any, __: any, index: number) => index + 1,
+        },
+        {
+            title: 'Address',
+            dataIndex: 'address',
+            key: 'address',
+            render: (address: string) => (
+                <Text copyable>{address}</Text>
+            ),
+        },
+        {
+            title: 'Amount',
+            dataIndex: 'amount',
+            key: 'amount',
+            render: (amount: bigint) => (
+                <Text>{parseFloat(amount.toString()) / 1e18} {tokenSymbol as string}</Text>
+            ),
+        },
+    ]
 
     if (!isValidAddresses) {
         return (
@@ -379,7 +436,6 @@ function PermitTokenBank() {
                     />
                 </div>
                 <Space>
-                    {/* 常规approve+deposit转账 */}
                     <Button
                         type="primary"
                         onClick={handleDeposit}
@@ -387,7 +443,6 @@ function PermitTokenBank() {
                     >
                         Deposit with approve
                     </Button>
-                    {/* 通过签名替代approve，实现deposit（节省gas费用） */}
                     <Button
                         type="primary"
                         onClick={handlePermitDeposit}
@@ -403,6 +458,17 @@ function PermitTokenBank() {
                         Withdraw
                     </Button>
                 </Space>
+
+                <div>
+                    <Text strong>Top Depositors</Text>
+                    <Table
+                        dataSource={topDepositors}
+                        columns={columns}
+                        rowKey="address"
+                        pagination={false}
+                        size="small"
+                    />
+                </div>
             </Space>
         </Card>
     )
