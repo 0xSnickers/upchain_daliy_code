@@ -24,7 +24,13 @@ contract UniswapV2Router02 {
         WETH = _WETH;
     }
 
-    // 添加流动性
+    // 添加流动性 内部函数
+    // @notice 添加流动性 内部函数
+    // @param tokenA 代币A地址
+    // @param tokenB 代币B地址
+    // @param amountADesired 代币A数量
+    // @param amountBDesired 代币B数量
+    // @param amountAMin 代币A最小数量
     function _addLiquidity(
         address tokenA,
         address tokenB,
@@ -72,6 +78,13 @@ contract UniswapV2Router02 {
         }
     }
     // 添加流动性 ERC20
+    // @notice 添加流动性ERC20
+    // @param tokenA 代币A地址
+    // @param tokenB 代币B地址
+    // @param amountADesired 代币A数量
+    // @param amountBDesired 代币B数量
+    // @param amountAMin 代币A最小数量
+    // @param amountBMin 代币B最小数量
     function addLiquidity(
         address tokenA,
         address tokenB,
@@ -101,6 +114,13 @@ contract UniswapV2Router02 {
         liquidity = IUniswapV2Pair(pair).mint(to);
     }
     // 添加流动性ETH
+    // @notice 添加流动性ETH
+    // @param token 代币地址
+    // @param amountTokenDesired 代币数量
+    // @param amountTokenMin 代币最小数量
+    // @param amountETHMin ETH最小数量
+    // @param to 接收LP代币的地址
+    // @param deadline 交易截止时间
     function addLiquidityETH(
         address token,
         uint amountTokenDesired,
@@ -136,6 +156,10 @@ contract UniswapV2Router02 {
 
     // 获取Uniswap价格 返回[amountIn, amountIn * 100]
     // path[0] 是WETH，path[1] 是Token
+    // @notice 获取Uniswap价格 返回[amountIn, amountIn * 100]
+    // @param amountIn 输入数量
+    // @param path 路径
+    // @return amounts 输出数量
     function getAmountsOut(
         uint amountIn,
         address[] calldata path
@@ -166,6 +190,11 @@ contract UniswapV2Router02 {
     }
 
     // 购买代币 返回[amountIn, amountIn * 100]
+    // @notice 购买代币 返回[amountIn, amountIn * 100]
+    // @param amountOutMin 输出最小数量
+    // @param path 路径
+    // @param to 接收代币的地址
+    // @param deadline 交易截止时间
     function swapExactETHForTokens(
         uint /* amountOutMin */,
         address[] calldata /* path */,
