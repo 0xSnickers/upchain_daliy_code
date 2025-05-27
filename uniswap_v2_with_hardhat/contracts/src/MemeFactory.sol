@@ -164,21 +164,24 @@ contract MemeFactory {
     // @param tokenAddr 代币地址
     // @param ethAmount ETH数量
     function _addInitialLiquidity(address tokenAddr, uint256 ethAmount) internal {
+        // 举例： 如果 mint 价格是 0.01 ETH per token
+        // - 5% 手续费是 0.05 ETH
+        // - 那么添加的 token 数量 = 0.05 / 0.01 = 5 tokens
+        // - 流动性价格 = 0.05 ETH / 5 tokens = 0.01 ETH per token ✅
         MemeToken token = MemeToken(payable(tokenAddr));
-        
-        // 根据mint价格计算应该添加的代币数量
+        // ✅ 根据mint价格计算应该添加的代币数量
         uint256 tokenAmount = ethAmount / token.price();
         
-        // 确保有足够的代币可以添加流动性
+        // ✅ 确保有足够的代币可以添加流动性
         require(tokenAmount > 0, "Insufficient token amount");
         
-        // mint代币给factory用于添加流动性
+        // ✅ mint代币给factory用于添加流动性
         token.mint{value: 0}(address(this));
         
-        // 批准router使用代币
+        // ✅ 批准router使用代币
         IERC20(tokenAddr).approve(address(uniswapRouter), tokenAmount);
         
-        // 添加流动性
+        // ✅ 添加流动性
         (uint256 amountToken, uint256 amountETH, uint256 liquidity) = uniswapRouter.addLiquidityETH{value: ethAmount}(
             tokenAddr,
             tokenAmount,
