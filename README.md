@@ -18,6 +18,7 @@
 │ ├── 5-21/ # 透明代理 和 UUPS代理
 │ ├── 5-22/ # 合约安全
 │ ├── 5-26/ # Token 发行 IDO 及 DEX
+│ ├── uniswap_v2_with_hardhat/ # uniswap v2-core 本地环境
 │ ├── backend_service/ # Nodejs + Viem 服务
 │ └── wagmi_project/ # React 前端项目（接入ABI + Contract Address）
 ```
