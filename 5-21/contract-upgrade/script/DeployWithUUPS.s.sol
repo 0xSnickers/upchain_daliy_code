@@ -25,14 +25,12 @@ contract DeployWithUUPSScript is Script {
             marketInitData
         );
 
-        // 4. 部署 NFTMarketV2 实现合约（为后续升级准备）
-        NFTMarketV2 marketV2Implementation = new NFTMarketV2();
+       
 
         vm.stopBroadcast();
 
         // 输出部署地址
         console2.log("NFTMarketV1 Implementation:", address(marketV1Implementation));
         console2.log("NFTMarket Proxy:", address(marketProxy));
-        console2.log("NFTMarketV2 Implementation:", address(marketV2Implementation));
     }
 }

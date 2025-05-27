@@ -19,13 +19,14 @@ contract UpgradeTransparentProxyScript is Script {
     bytes32 private constant ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
   
     function run() external {
-        // 从环境变量获取地址
-        address TOKEN_TEMPLATE_ADDRESS = 0xD84379CEae14AA33C123Af12424A37803F885889; // Inscription Token 模板地址
-        address INSCRIPTION_FACTORY_V1_IMPL_ADDRESS = 0x2B0d36FACD61B71CC05ab8F3D2355ec3631C0dd5; // V1 实现逻辑合约地址
-        address payable PROXY_ADDRESS = payable(0xfbC22278A96299D91d41C453234d97b4F5Eb9B2d); // V1 代理地址
+        // sepolia 合约地址
+        address TOKEN_TEMPLATE_ADDRESS = 0xEF2874a4B7905717c6fd1069c74e57C74d0E4Fdb; // Inscription Token 模板地址
+        address INSCRIPTION_FACTORY_V1_IMPL_ADDRESS = 0xa03a0376621AcB5957aaC8D59f94674462d68DfD; // V1 实现逻辑合约地址
+        address payable PROXY_ADDRESS = payable(0x45444262058Ce1Ac5BeEEa8246308fC3578389D8); // V1 代理地址
         
         // 获取私钥
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_LOCAL");
+        // uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_LOCAL");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_SEPOLIA");
 
         // 开始广播交易
         vm.startBroadcast(deployerPrivateKey);

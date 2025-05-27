@@ -6,3 +6,10 @@
 
 插槽信息打印：
 ![描述](./assets/gap-slot.jpg)
+
+
+---
+
+> 📖 sepolia 代理合约
+> * UUPS: `0xe56AA3135E82D66a3D1525C1418C0f8d05012deA`
+> * TransparentProxy：`0x4406c71794372d1C889e0dA4C9CCe2aD908079da`

@@ -13,8 +13,8 @@ import "../src/TransparentProxy/InscriptionFactoryV2.sol";
 contract DeployTransparentProxyScript is Script {
   
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_LOCAL");
-        // uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_SEPOLIA");
+        // uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_LOCAL");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_SEPOLIA");
         address deployer = vm.addr(deployerPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);
