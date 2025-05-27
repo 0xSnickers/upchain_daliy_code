@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "forge-std/console.sol";
 
 contract NFTMarketGasOptimization is ReentrancyGuard, Ownable {
     // 优化：使用 uint96 存储价格，因为 ETH 价格不会超过 2^96

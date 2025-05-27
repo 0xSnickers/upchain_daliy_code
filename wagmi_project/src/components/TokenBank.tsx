@@ -101,7 +101,7 @@ const TOKEN_BANK_EVENTS = {
 } as const;
 
 const TokenBank = () => {
-  const { data: blockNumber } = useBlockNumber({ watch: true })
+  const { data: blockNumber } = useBlockNumber({ watch: false })
   const chainId = useChainId()
   const [currentAddresses, setCurrentAddresses] = useState(getContractAddresses(chainId))
   const [allTokens, setAllTokens] = useState(getCurrentAllTokens(chainId));
@@ -127,7 +127,7 @@ const TokenBank = () => {
     tokenAddress: currentAddresses.MYTOKEN as `0x${string}`,
     tokenBankAddress: currentAddresses.TOKEN_BANK as `0x${string}`,
     enabled: !!address,
-    watch: true,
+    watch: false,
     chainId,
   });
 
